@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useWallet, useConnection } from '@solana/wallet-adapter-react'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js'
 import classNames from 'classnames'
 import { PROGRAM_ID, buildClaimIx, buildJoinIx, deriveAllocationPda, deriveMatchPda, deriveConfigPda, getYesterdayUtcDayId, getTodayUtcDayId, fetchAllMatches, fetchStats, parseAllocation } from '../chain/arena'
@@ -45,16 +44,20 @@ export const App: React.FC = () => {
   const onConnectClick = async () => {
     try {
       setError('')
-      // Clear any previous wallet selection to force user choice
-      if (typeof window !== 'undefined' && window.localStorage) {
-        window.localStorage.removeItem('walletName')
-        window.localStorage.removeItem('solana-wallet')
+      
+      // Try to connect to Phantom directly if available
+      if (typeof window !== 'undefined' && (window as any).solana?.isPhantom) {
+        console.log('Phantom detected, connecting directly...')
+        const response = await (window as any).solana.connect()
+        console.log('Phantom connected:', response.publicKey.toString())
+      } else {
+        // Fallback to wallet adapter
+        console.log('Using wallet adapter...')
+        await connect()
       }
-      await connect()
     } catch (e: any) {
       console.error('Wallet connection error:', e)
-      const errorMessage = e?.message || 'Failed to connect wallet. Please try again.'
-      setError(`Connection failed: ${errorMessage}`)
+      setError('Failed to connect wallet. Please install Phantom wallet or try again.')
     }
   }
 
@@ -199,6 +202,20 @@ function Settings({ theme, setTheme }: { theme: string, setTheme: (t: string) =>
 }
 
 function LandingPage({ onConnect, error, theme, setTheme }: { onConnect: () => void, error: string, theme: string, setTheme: (t: string) => void }) {
+  const [walletDetected, setWalletDetected] = useState(false)
+  
+  useEffect(() => {
+    // Check for wallet availability
+    const checkWallet = () => {
+      const isPhantom = typeof window !== 'undefined' && (window as any).solana?.isPhantom
+      const isSolflare = typeof window !== 'undefined' && (window as any).solflare
+      setWalletDetected(isPhantom || isSolflare)
+    }
+    
+    checkWallet()
+    // Check again after a short delay for wallets that load slowly
+    setTimeout(checkWallet, 1000)
+  }, [])
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100 dark:from-gray-900 dark:to-gray-800 px-4">
       {/* Settings in top right */}
@@ -222,12 +239,42 @@ function LandingPage({ onConnect, error, theme, setTheme }: { onConnect: () => v
           </p>
         </div>
         
+        {/* Wallet Status */}
+        <div className="mb-4 text-center">
+          {walletDetected ? (
+            <div className="text-sm text-green-600 dark:text-green-400 flex items-center justify-center gap-2">
+              ✓ Wallet detected! Ready to connect
+            </div>
+          ) : (
+            <div className="text-sm text-orange-600 dark:text-orange-400 flex items-center justify-center gap-2">
+              ⚠️ No wallet detected. Please install Phantom wallet first.
+            </div>
+          )}
+        </div>
+        
         {/* Connect Button */}
         <div className="w-full max-w-md mx-auto">
-          <WalletMultiButton className="!w-full !bg-gradient-to-r !from-sky-500 !to-blue-600 hover:!from-sky-400 hover:!to-blue-500 !text-white !text-lg md:!text-2xl !font-bold !py-3 md:!py-4 !px-6 md:!px-8 !rounded-xl !shadow-2xl transform hover:!scale-105 active:!scale-95 !transition-all !duration-200 !mb-4 !border-0 !justify-center">
-            🏛️ Connect Solana Wallet 🏛️
-          </WalletMultiButton>
+          <button 
+            onClick={onConnect}
+            className="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white text-lg md:text-2xl font-bold py-3 md:py-4 px-6 md:px-8 rounded-xl shadow-2xl transform hover:scale-105 active:scale-95 transition-all duration-200 mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!walletDetected}
+          >
+            🏛️ {walletDetected ? 'Connect Solana Wallet' : 'Install Phantom Wallet'} 🏛️
+          </button>
         </div>
+        
+        {/* Install Instructions */}
+        {!walletDetected && (
+          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p className="text-sm text-blue-700 dark:text-blue-300 text-center mb-2">
+              <strong>How to install Phantom Wallet:</strong>
+            </p>
+            <div className="text-xs text-blue-600 dark:text-blue-400 space-y-1">
+              <p>📱 <strong>Mobile:</strong> Download from App Store or Google Play</p>
+              <p>💻 <strong>Desktop:</strong> Install browser extension from phantom.app</p>
+            </div>
+          </div>
+        )}
         
         {/* Error Message */}
         {error && (
