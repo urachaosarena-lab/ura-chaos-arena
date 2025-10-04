@@ -48,14 +48,36 @@ Edit `onchain/programs/ura_chaos_arena/src/lib.rs` line 6:
 declare_id!("YOUR_ACTUAL_PROGRAM_ID_HERE");
 ```
 
-### 4. Build and Deploy
+### 4. Build and Deploy (Size Optimized)
+
+#### Option A: Optimized Build (Recommended)
 ```bash
 cd onchain
+
+# Use the optimized build script (Windows)
+.\build-optimized.ps1
+
+# Or use the bash script (Linux/Mac)
+./build-optimized.sh
+
+# Deploy to blockchain
+anchor deploy
+```
+
+#### Option B: Manual Build
+```bash
+cd onchain
+
+# Set size optimization flags
+$env:RUSTFLAGS = "-C opt-level=z -C target-cpu=native -C codegen-units=1 -C panic=abort"
 
 # Build the program
 anchor build
 
-# Deploy to blockchain (costs 2-5 SOL)
+# Check binary size (should be < 2MB)
+Get-Item target/deploy/ura_chaos_arena.so | Select-Object Length
+
+# Deploy to blockchain (costs 2-3 SOL if < 2MB)
 anchor deploy
 
 # Verify deployment
@@ -95,13 +117,19 @@ VITE_PYTH_SOL_USD_PRICE_ACCOUNT=H6ARHf6YXhGYeQfUzQNGk6rDNnLBQKrenN712K4AQJEG
 VITE_VAULT_ADDRESS=YOUR_REVENUE_WALLET
 ```
 
-## Cost Breakdown
+## Cost Breakdown (Optimized)
 
-- **Program Deployment**: 2-5 SOL
+### Size-Optimized Build (< 2MB):
+- **Program Deployment**: 2-3 SOL (reduced due to smaller size)
 - **Config + Stats + Buyback Vaults**: ~0.1 SOL  
 - **Gas for transactions**: ~0.05 SOL
 - **Buffer for operations**: 2-3 SOL
-- **Total recommended**: **8-10 SOL** for safe deployment
+- **Total recommended**: **5-7 SOL** for safe deployment
+
+### Unoptimized Build (> 2MB):
+- **Program Deployment**: 4-6 SOL
+- **Other costs**: ~3 SOL
+- **Total**: 7-9 SOL
 
 ## Post-Deployment Tasks
 

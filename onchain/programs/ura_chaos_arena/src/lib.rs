@@ -2,8 +2,18 @@ use anchor_lang::prelude::*;
 use anchor_lang::solana_program::{program::invoke_signed, system_instruction};
 use pyth_sdk_solana::load_price_feed_from_account_info;
 
-// Placeholder: set via `anchor keys set` and update Anchor.toml before deploy
 declare_id!("UraChAoSArena111111111111111111111111111111");
+
+// Constants to reduce code size
+const PCT_5: u128 = 5;
+const PCT_15: u128 = 15;
+const PCT_33: u128 = 33;
+const PCT_35: u128 = 35;
+const PCT_50: u128 = 50;
+const PCT_85: u128 = 85;
+const PCT_100: u128 = 100;
+const PYTH_STALENESS: u64 = 120;
+const PYTH_CONF_MAX: u128 = 5;
 
 // Daily arena keyed by UTC day (unix_timestamp / 86400). Ticket purchases flow into a per-match
 // SOL vault PDA. At finalize, the program splits the pot: 85% prize pool, and 3x 5% buckets
@@ -28,18 +38,8 @@ pub mod ura_chaos_arena {
         config.buyback_ura_bump = *ctx.bumps.get("buyback_ura_vault").unwrap();
         config.buyback_urac_bump = *ctx.bumps.get("buyback_urac_vault").unwrap();
 
-        // Initialize stats defaults
-        let stats = &mut ctx.accounts.stats;
-        stats.total_matches = 0;
-        stats.total_players = 0;
-        stats.total_prize_distributed = 0;
-        stats.total_ura_earmarked_sol = 0;
-        stats.total_urac_earmarked_sol = 0;
-        stats.total_ura_burned_atoms = 0;
-        stats.total_urac_burned_atoms = 0;
-        stats.total_ura_burn_sol = 0;
-        stats.total_urac_burn_sol = 0;
-        stats.bump = *ctx.bumps.get("stats").unwrap();
+        // Initialize stats (zero-initialization is automatic)
+        ctx.accounts.stats.bump = *ctx.bumps.get("stats").unwrap();
         Ok(())
     }
 
@@ -48,36 +48,25 @@ pub mod ura_chaos_arena {
     pub fn join(ctx: Context<Join>, amount: u64) -> Result<()> {
         require!(amount > 0, ArenaError::InvalidAmount);
         let config = &ctx.accounts.config;
-        // Enforce $5 USD in SOL using Pyth SOL/USD, with staleness and confidence checks
         let clock = Clock::get()?;
         let price_feed = load_price_feed_from_account_info(&ctx.accounts.pyth_price_account)
             .map_err(|_| ArenaError::PythError)?;
-        let price = price_feed.get_price_no_older_than(&clock, 120).ok_or(ArenaError::PythStale)?;
-        // Require confidence interval <= 5% of price
+        let price = price_feed.get_price_no_older_than(&clock, PYTH_STALENESS).ok_or(ArenaError::PythStale)?;
         let abs_price = (price.price as i128).abs();
-        require!((price.conf as i128) * 100 <= abs_price * 5, ArenaError::PythConfTooWide);
+        require!((price.conf as i128) * PCT_100 <= abs_price * PYTH_CONF_MAX, ArenaError::PythConfTooWide);
         let min_lamports = lamports_for_usd_ceil(5, price.price, price.expo)?;
         require!(amount >= min_lamports, ArenaError::TicketTooCheap);
         // Optional safety floor
         require!(amount >= config.min_ticket_lamports, ArenaError::TicketTooCheap);
 
-        let clock = Clock::get()?;
         let current_day = unix_day(clock.unix_timestamp);
         let m = &mut ctx.accounts.match_state;
 
-        // If newly initialized, set identifiers
-        if m.day_id == 0 { // day_id never 0 for real days; unix_day for negative ts also != 0
+        // Initialize if needed (most fields auto-zero)
+        if m.day_id == 0 {
             m.day_id = current_day;
-            m.ticket_count = 0;
-            m.pot_lamports = 0;
             m.status = MatchStatus::Open as u8;
             m.bump = *ctx.bumps.get("match_state").unwrap();
-            m.allocations_recorded = 0;
-            m.winners_count = 0;
-            m.group2_count = 0;
-            m.group3_count = 0;
-            m.prize_pool = 0;
-            m.remainder = 0;
         } else {
             require!(m.day_id == current_day, ArenaError::WrongMatchForDay);
             require!(m.status == MatchStatus::Open as u8, ArenaError::MatchClosed);
@@ -124,11 +113,11 @@ pub mod ura_chaos_arena {
         let pot = m.pot_lamports;
         require!(pot > 0, ArenaError::EmptyPot);
 
-        // Buckets: 85% prize, 5% URA buyback, 5% URACHAOS buyback, 5% revenue.
+        // Buckets: 85% prize, 5% each for URA, URACHAOS, revenue
         let mut remaining = pot;
-        let revenue = (pot as u128 * 5) / 100; // u128 math then cast
-        let ura = (pot as u128 * 5) / 100;
-        let urac = (pot as u128 * 5) / 100;
+        let revenue = (pot as u128 * PCT_5) / PCT_100;
+        let ura = (pot as u128 * PCT_5) / PCT_100;
+        let urac = (pot as u128 * PCT_5) / PCT_100;
         // Note: To avoid rounding dust staying in vault, we compute prize as the exact remaining
         // after moving out the three 5% buckets.
 
@@ -172,9 +161,9 @@ pub mod ura_chaos_arena {
         )?;
 
         // Derive winners and group sizes based on ticket_count.
-        let total = m.ticket_count.max(1); // avoid div by zero
-        let winners_count = ceil_div(total as u64 * 33, 100) as u32; // ceil(0.33 * total)
-        let group2_count = (ceil_div(total as u64 * 15, 100) as i64 - 1).max(0) as u32; // excludes top1
+        let total = m.ticket_count.max(1);
+        let winners_count = ceil_div(total as u64 * PCT_33, PCT_100) as u32;
+        let group2_count = (ceil_div(total as u64 * PCT_15, PCT_100) as i64 - 1).max(0) as u32;
         let group2_count = group2_count.min(winners_count.saturating_sub(1));
         let group3_count = winners_count.saturating_sub(1 + group2_count);
 
@@ -383,6 +372,7 @@ pub struct Claim<'info> {
 
 // State
 #[account]
+#[derive(Default)]
 pub struct ArenaConfig {
     pub authority: Pubkey,
     pub revenue_wallet: Pubkey,
@@ -391,9 +381,8 @@ pub struct ArenaConfig {
     pub bump: u8,
     pub buyback_ura_bump: u8,
     pub buyback_urac_bump: u8,
-    pub _padding: [u8; 5],
 }
-impl ArenaConfig { pub const SIZE: usize = 32 + 32 + 32 + 8 + 1 + 1 + 1 + 5; }
+impl ArenaConfig { pub const SIZE: usize = 32 + 32 + 32 + 8 + 3; }
 
 #[account]
 pub struct MatchState {
@@ -415,31 +404,32 @@ impl MatchState {
 }
 
 #[account]
+#[derive(Default)]
 pub struct PlayerEntry {
     pub match_key: Pubkey,
     pub player: Pubkey,
     pub paid: u64,
     pub joined_at: i64,
     pub bump: u8,
-    pub _pad: [u8; 7],
 }
-impl PlayerEntry { pub const SIZE: usize = 32 + 32 + 8 + 8 + 1 + 7; }
+impl PlayerEntry { pub const SIZE: usize = 32 + 32 + 8 + 8 + 1; }
 
 #[account]
+#[derive(Default)]
 pub struct WinnerAllocation {
     pub match_key: Pubkey,
     pub player: Pubkey,
     pub amount: u64,
     pub claimed: bool,
     pub bump: u8,
-    pub _pad: [u8; 6],
 }
-impl WinnerAllocation { pub const SIZE: usize = 32 + 32 + 8 + 1 + 1 + 6; }
+impl WinnerAllocation { pub const SIZE: usize = 32 + 32 + 8 + 2; }
 
 #[repr(u8)]
 pub enum MatchStatus { Open = 0, Finalized = 1 }
 
 #[account]
+#[derive(Default)]
 pub struct Stats {
     pub total_matches: u64,
     pub total_players: u64,
@@ -451,9 +441,8 @@ pub struct Stats {
     pub total_ura_burn_sol: u64,
     pub total_urac_burn_sol: u64,
     pub bump: u8,
-    pub _pad: [u8; 7],
 }
-impl Stats { pub const SIZE: usize = 8 + 8 + 16 + 16 + 16 + 16 + 16 + 8 + 8 + 1 + 7; }
+impl Stats { pub const SIZE: usize = 8 + 8 + 16*5 + 8 + 8 + 1; }
 
 // Utils
 fn unix_day(ts: i64) -> i64 { ts.div_euclid(86_400) }

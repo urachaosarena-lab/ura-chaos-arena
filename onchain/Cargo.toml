@@ -11,7 +11,11 @@ edition = "2021"
 anchor-lang = "0.29.0"
 
 [profile.release]
-opt-level = "s"
+opt-level = "z"           # Optimize for size
+lto = true                # Enable link-time optimization
+codegen-units = 1         # Single codegen unit for better optimization
+panic = "abort"           # Smaller panic handling
+strip = true             # Strip debug symbols
 
 [profile.dev]
 opt-level = 1
