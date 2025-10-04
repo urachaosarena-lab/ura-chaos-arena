@@ -91,6 +91,32 @@ export async function buildJoinIx(connection: Connection, walletPubkey: PublicKe
   return ix
 }
 
+// High Stakes functions (will need smart contract update in Phase 2)
+export function deriveHighStakesMatchPda(dayId: number) {
+  // For now, use a different seed prefix to distinguish from regular matches
+  const SEED_HIGH_STAKES = new TextEncoder().encode('high-stakes')
+  return PublicKey.findProgramAddressSync([SEED_HIGH_STAKES, dayToLeBytes(dayId)], PROGRAM_ID)[0]
+}
+
+export async function buildJoinHighStakesIx(connection: Connection, walletPubkey: PublicKey, lamports: number, pythPriceAccount: PublicKey, dayId: number): Promise<TransactionInstruction> {
+  // This will need to be implemented when the smart contract is updated in Phase 2
+  // For now, throw an error to indicate it's not ready
+  throw new Error('High Stakes arena is coming in Phase 2!')
+}
+
+export async function getUsdToSolRateFromPyth(connection: Connection, pythPriceAccount: PublicKey): Promise<number> {
+  // Placeholder function for getting SOL price from Pyth
+  // This will be used for both $5 and $50 ticket calculations
+  try {
+    const info = await connection.getAccountInfo(pythPriceAccount)
+    if (!info) throw new Error('Pyth price account not found')
+    // For now, return fallback price
+    return 150 // USD per SOL fallback
+  } catch {
+    return 150 // USD per SOL fallback
+  }
+}
+
 // Minimal parsers
 export type MatchStateLite = {
   dayId: bigint

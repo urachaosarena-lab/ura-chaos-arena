@@ -6,7 +6,8 @@ import {
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base'
 import {
   PhantomWalletAdapter,
-  SolflareWalletAdapter
+  SolflareWalletAdapter,
+  SolletWalletAdapter
 } from '@solana/wallet-adapter-wallets'
 import { clusterApiUrl } from '@solana/web3.js'
 
@@ -22,7 +23,9 @@ export const WalletContextProvider: React.FC<React.PropsWithChildren> = ({ child
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
-      new SolflareWalletAdapter()
+      new SolflareWalletAdapter(),
+      // Add Sollet for better PC browser compatibility
+      new SolletWalletAdapter({ provider: 'https://www.sollet.io' })
     ],
     []
   )
@@ -36,9 +39,24 @@ export const WalletContextProvider: React.FC<React.PropsWithChildren> = ({ child
 
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect={false} onError={onError}>
+      <WalletProvider 
+        wallets={wallets} 
+        autoConnect={true} 
+        onError={onError}
+        localStorageKey="solana-wallet"
+      >
         {/* Expose error via context-like prop drilling for simplicity */}
-        <div data-wallet-error={errorMsg || ''}>{children}</div>
+        <div data-wallet-error={errorMsg || ''}>
+          {errorMsg && (
+            <div className="fixed top-4 right-4 z-50 p-3 bg-red-500 text-white rounded-lg shadow-lg max-w-sm">
+              <div className="flex items-center gap-2">
+                <span>⚠️</span>
+                <span className="text-sm">{errorMsg}</span>
+              </div>
+            </div>
+          )}
+          {children}
+        </div>
       </WalletProvider>
     </ConnectionProvider>
   )

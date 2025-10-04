@@ -33,7 +33,7 @@ async function getUsdToSolRate(): Promise<number> {
 export const App: React.FC = () => {
   const { publicKey, connected, connect, disconnect, signTransaction } = useWallet() as any
   const { connection } = useConnection()
-  const [tab, setTab] = useState<'dashboard' | 'profile' | 'hall'>('dashboard')
+  const [tab, setTab] = useState<'chaos' | 'highstakes' | 'profile' | 'hall' | 'roadmap'>('chaos')
   const [error, setError] = useState<string>('')
   const [joining, setJoining] = useState(false)
   const { theme, setTheme } = useTheme()
@@ -49,6 +49,11 @@ export const App: React.FC = () => {
       console.error(e)
       setError('Error connecting wallet, try again...')
     }
+  }
+
+  // If wallet is not connected, show landing page
+  if (!connected) {
+    return <LandingPage onConnect={onConnectClick} error={error} theme={theme} setTheme={setTheme} />
   }
 
   const onJoinArena = async () => {
@@ -98,18 +103,21 @@ export const App: React.FC = () => {
   return (
     <div className="min-h-full flex flex-col">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-sand-200/50 dark:border-gray-800">
-        <div className="font-extrabold text-xl text-sky-500">UraChaos Arena</div>
-        <div className="flex items-center gap-3">
-          {connected && (
-            <div className="text-sm text-gray-700 dark:text-gray-300">{shortAddress(publicKey?.toBase58())}</div>
-          )}
-          <Settings theme={theme} setTheme={setTheme} />
-          {connected ? (
+      <div className="flex flex-col items-center px-4 py-3 border-b border-sand-200/50 dark:border-gray-800">
+        <div className="font-extrabold text-4xl text-sky-500 text-center mb-2">⚔️ UraChaos Arena ⚔️</div>
+        <div className="text-center mb-2">
+          <div className="text-lg font-bold text-orange-600 dark:text-orange-400">Alpha phase 1 stage.</div>
+          <div className="text-xs text-gray-600 dark:text-gray-400 max-w-2xl">We are currently testing the dApp, be aware you might find multiple bugs. We would appreciate it if you would report bugs through our official X account via DM</div>
+        </div>
+        <div className="flex items-center justify-between w-full">
+          <div></div>
+          <div className="flex items-center gap-3">
+            {connected && (
+              <div className="text-sm text-gray-700 dark:text-gray-300">{shortAddress(publicKey?.toBase58())}</div>
+            )}
+            <Settings theme={theme} setTheme={setTheme} />
             <button className="px-3 py-2 rounded-md bg-sand-400 text-gray-900 hover:bg-sand-300 active:scale-95 transition" onClick={() => disconnect()}>Retreat</button>
-          ) : (
-            <button className="px-3 py-2 rounded-md bg-sky-400 text-white hover:bg-sky-300 active:scale-95 transition" onClick={onConnectClick}>Enter the Arena</button>
-          )}
+          </div>
         </div>
       </div>
 
@@ -119,19 +127,30 @@ export const App: React.FC = () => {
       )}
 
       {/* Tabs */}
-      <div className="px-4 py-2 flex gap-2 border-b border-sand-200/50 dark:border-gray-800">
-        <TabButton current={tab} setTab={setTab} id="dashboard" label="Dashboard" />
-        <TabButton current={tab} setTab={setTab} id="profile" label="Profile" />
-        <TabButton current={tab} setTab={setTab} id="hall" label="Hall of Fame" />
+      <div className="px-4 py-2 flex gap-2 border-b border-sand-200/50 dark:border-gray-800 flex-wrap">
+        <TabButton current={tab} setTab={setTab} id="chaos" label="⚔️ Chaos" />
+        <TabButton current={tab} setTab={setTab} id="highstakes" label="🎰 High Stakes" />
+        <TabButton current={tab} setTab={setTab} id="profile" label="👤 Profile" />
+        <TabButton current={tab} setTab={setTab} id="hall" label="🏆 Hall of Fame" />
+        <TabButton current={tab} setTab={setTab} id="roadmap" label="🚀 Roadmap" />
       </div>
 
       {/* Content */}
       <div className="flex-1 px-4 py-4">
-        {tab === 'dashboard' && (
-          <Dashboard connected={connected} onJoinArena={onJoinArena} joining={joining} />
+        {tab === 'chaos' && (
+          <ChaosTab connected={connected} onJoinArena={onJoinArena} joining={joining} />
         )}
+        {tab === 'highstakes' && <HighStakesTab />}
         {tab === 'profile' && <Profile />}
         {tab === 'hall' && <HallOfFame />}
+        {tab === 'roadmap' && <RoadmapTab />}
+      </div>
+      
+      {/* Financial Disclaimer */}
+      <div className="px-4 py-2 text-center text-xs text-gray-500 dark:text-gray-400 border-t border-sand-200/50 dark:border-gray-800">
+        This platform is for entertainment purposes only. Trading cryptocurrencies involves substantial risk and may not be suitable for all investors. 
+        Past performance does not guarantee future results. You could lose all or part of your investment. 
+        Please consider your risk tolerance and consult with a financial advisor. This is not financial advice.
       </div>
     </div>
   )
@@ -166,7 +185,65 @@ function Settings({ theme, setTheme }: { theme: string, setTheme: (t: string) =>
   )
 }
 
-function Dashboard({ connected, onJoinArena, joining }: { connected: boolean, onJoinArena: () => Promise<void>, joining: boolean }) {
+function LandingPage({ onConnect, error, theme, setTheme }: { onConnect: () => void, error: string, theme: string, setTheme: (t: string) => void }) {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100 dark:from-gray-900 dark:to-gray-800 px-4">
+      {/* Settings in top right */}
+      <div className="absolute top-4 right-4">
+        <Settings theme={theme} setTheme={setTheme} />
+      </div>
+      
+      <div className="max-w-2xl mx-auto text-center">
+        {/* Main Title */}
+        <h1 className="text-6xl md:text-8xl font-extrabold text-sky-500 mb-8 animate-pulse">
+          ⚔️ Welcome to the UraChaos Arena ⚔️
+        </h1>
+        
+        {/* Gladiator Lore */}
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg p-6 mb-8 border-2 border-amber-300 dark:border-amber-600">
+          <p className="text-lg text-gray-800 dark:text-gray-200 italic leading-relaxed">
+            🏛️ Hail, brave soul! Step into the grand colosseum where only the mightiest traders survive. 
+            The sands are stained with the tears of the fallen, but for those who dare to enter, 
+            marvelous prizes await! ⚡ Fight hard, trade smart, and prove your worth in this arena of chaos. 
+            May the gods of profit smile upon you! 🏆
+          </p>
+        </div>
+        
+        {/* Connect Button */}
+        <button 
+          onClick={onConnect}
+          className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white text-2xl font-bold py-4 px-8 rounded-xl shadow-2xl transform hover:scale-105 active:scale-95 transition-all duration-200 mb-4"
+        >
+          🏛️ Connect Solana Wallet 🏛️
+        </button>
+        
+        {/* Error Message */}
+        {error && (
+          <div className="mt-4 p-4 bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 rounded-lg text-red-700 dark:text-red-300">
+            {error}
+          </div>
+        )}
+        
+        {/* Alpha Warning */}
+        <div className="mt-8 text-center">
+          <div className="text-lg font-bold text-orange-600 dark:text-orange-400 mb-2">⚠️ Alpha phase 1 stage ⚠️</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 max-w-xl mx-auto">
+            We are currently testing the dApp, be aware you might find multiple bugs. We would appreciate it if you would report bugs through our official X account via DM
+          </div>
+        </div>
+      </div>
+      
+      {/* Financial Disclaimer */}
+      <div className="absolute bottom-4 left-4 right-4 text-center text-xs text-gray-500 dark:text-gray-400">
+        This platform is for entertainment purposes only. Trading cryptocurrencies involves substantial risk and may not be suitable for all investors. 
+        Past performance does not guarantee future results. You could lose all or part of your investment. 
+        Please consider your risk tolerance and consult with a financial advisor. This is not financial advice.
+      </div>
+    </div>
+  )
+}
+
+function ChaosTab({ connected, onJoinArena, joining }: { connected: boolean, onJoinArena: () => Promise<void>, joining: boolean }) {
   const { connection } = useConnection()
   const { publicKey, signTransaction, sendTransaction } = useWallet() as any
   const [claimable, setClaimable] = useState<{ dayId: number, amountLamports: bigint } | null>(null)
@@ -221,18 +298,110 @@ function Dashboard({ connected, onJoinArena, joining }: { connected: boolean, on
 
   return (
     <div className="grid gap-4">
+      {/* Rules and Prize Distribution */}
+      <div className="p-4 rounded-lg border border-amber-300 dark:border-amber-600 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20">
+        <h3 className="text-xl font-bold text-amber-800 dark:text-amber-200 mb-3">⚔️ Chaos Arena Rules ⚔️</h3>
+        <div className="text-sm text-amber-700 dark:text-amber-300 space-y-2">
+          <p><strong>🏛️ Entry Fee:</strong> $5 worth of SOL per gladiator</p>
+          <p><strong>⏰ Duration:</strong> 24-hour battles, resetting at UTC dawn</p>
+          <p><strong>🏆 Prize Distribution:</strong> Top 33% of warriors by %PNL claim their spoils</p>
+          <p><strong>💰 Pool Allocation:</strong> 85% prizes, 5% $URA burn, 5% $URACHAOS burn, 5% arena maintenance</p>
+          <p><strong>⚡ Victory Condition:</strong> Highest %PNL when the gong sounds wins the greatest glory!</p>
+        </div>
+      </div>
+      
       <CurrentMatchPanel />
       <Leaderboard />
       <div className="flex flex-col gap-2">
         <button disabled={!connected || joining} onClick={onJoinArena} className={classNames('w-full md:w-auto px-4 py-3 rounded-md text-white transition', connected ? 'bg-sky-500 hover:bg-sky-400 active:scale-95' : 'bg-gray-400 cursor-not-allowed')}>
-          {joining ? 'Summoning the treasurer...' : 'Join the Arena - $5 SOL'}
+          {joining ? '⚔️ Summoning the treasurer...' : '⚔️ Join the Chaos Arena - $5 SOL'}
         </button>
         {claimable && (
           <button disabled={claiming} onClick={onClaim} className={classNames('w-full md:w-auto px-4 py-3 rounded-md text-white transition', !claiming ? 'bg-sand-400 text-gray-900 hover:bg-sand-300 active:scale-95' : 'bg-gray-400 cursor-not-allowed')}>
-            {claiming ? 'Claiming...' : `Claim Winnings (${Number(claimable.amountLamports) / LAMPORTS_PER_SOL} SOL)`}
+            {claiming ? '💰 Claiming...' : `💰 Claim Winnings (${Number(claimable.amountLamports) / LAMPORTS_PER_SOL} SOL)`}
           </button>
         )}
         {!connected && <p className="text-sm text-gray-600 dark:text-gray-400">Connect your wallet to pay tribute.</p>}
+      </div>
+    </div>
+  )
+}
+
+function HighStakesTab() {
+  return (
+    <div className="grid gap-4">
+      {/* Rules and Prize Distribution */}
+      <div className="p-4 rounded-lg border border-purple-300 dark:border-purple-600 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+        <h3 className="text-xl font-bold text-purple-800 dark:text-purple-200 mb-3">🎰 High Stakes Arena Rules 🎰</h3>
+        <div className="text-sm text-purple-700 dark:text-purple-300 space-y-2">
+          <p><strong>💎 Entry Fee:</strong> $50 worth of SOL per elite gladiator</p>
+          <p><strong>⏰ Duration:</strong> 24-hour elite battles, synchronized with Chaos Arena</p>
+          <p><strong>🏆 Prize Distribution:</strong> Only the top 20% of warriors by %PNL earn rewards</p>
+          <p><strong>👑 Elite Rewards:</strong> 1st place: 40% | Top 10%: 40% | Remaining top 20%: 20%</p>
+          <p><strong>💰 Pool Allocation:</strong> 85% prizes, 5% $URA burn, 5% $URACHAOS burn, 5% arena maintenance</p>
+          <p><strong>⚡ Victory Condition:</strong> For the bravest souls seeking ultimate glory and greater spoils!</p>
+        </div>
+      </div>
+      
+      {/* Coming Soon Message */}
+      <div className="p-12 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-center">
+        <h2 className="text-3xl font-bold text-gray-600 dark:text-gray-400 mb-4">🚧 Under Construction 🚧</h2>
+        <p className="text-xl text-gray-500 dark:text-gray-500">Coming up in phase 2...</p>
+        <p className="text-sm text-gray-400 dark:text-gray-600 mt-2">The elite arena is being prepared for the most courageous warriors</p>
+      </div>
+    </div>
+  )
+}
+
+function RoadmapTab() {
+  return (
+    <div className="max-w-4xl mx-auto">
+      <h2 className="text-3xl font-bold text-center mb-8 text-sky-600 dark:text-sky-400">🚀 UraChaos Arena Roadmap 🚀</h2>
+      
+      <div className="space-y-8">
+        {/* Phase 1 */}
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold">✓</div>
+          <div className="flex-grow">
+            <h3 className="text-xl font-bold text-green-600 dark:text-green-400 mb-2">CURRENT - Phase 1: Testing Alpha</h3>
+            <p className="text-gray-700 dark:text-gray-300">Chaos mode, leaderboard, rules, profile, light/dark mode, hall of fame</p>
+          </div>
+        </div>
+        
+        {/* Arrow */}
+        <div className="flex justify-center">
+          <div className="text-4xl text-sky-500">⬇️</div>
+        </div>
+        
+        {/* Phase 2 */}
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold">2</div>
+          <div className="flex-grow">
+            <h3 className="text-xl font-bold text-orange-600 dark:text-orange-400 mb-2">Phase 2: Beta Launch</h3>
+            <p className="text-gray-700 dark:text-gray-300">Initial bugs fixed, High Stakes arena unlocked, enhanced stability</p>
+          </div>
+        </div>
+        
+        {/* Arrow */}
+        <div className="flex justify-center">
+          <div className="text-4xl text-sky-500">⬇️</div>
+        </div>
+        
+        {/* Phase 3 */}
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold">3</div>
+          <div className="flex-grow">
+            <h3 className="text-xl font-bold text-purple-600 dark:text-purple-400 mb-2">Phase 3: Full Release v1.0</h3>
+            <p className="text-gray-700 dark:text-gray-300">Extra features TBD, cosmetics, enhanced $URA & $URACHAOS flywheel mechanics</p>
+          </div>
+        </div>
+      </div>
+      
+      {/* Footer */}
+      <div className="mt-12 p-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+        <p className="text-center text-gray-600 dark:text-gray-400 italic">
+          🏛️ "The greatest arena is built one stone at a time, one battle at a time, one victory at a time." 🏛️
+        </p>
       </div>
     </div>
   )
@@ -255,31 +424,49 @@ function CurrentMatchPanel() {
   }, [])
   return (
     <div className="p-4 rounded-lg border border-sand-200/50 dark:border-gray-800 bg-white/70 dark:bg-white/5 backdrop-blur">
-      <div className="text-lg font-semibold mb-1">Current Match — the sands reset in {t}</div>
-      <div className="text-sm text-gray-600 dark:text-gray-400">The gong will sound at UTC dawn; champions are tallied by %PNL.</div>
+      <div className="text-lg font-semibold mb-1">🏛️ Current Match — the sands reset in {t}</div>
+      <div className="text-sm text-gray-600 dark:text-gray-400">🔔 The gong will sound at UTC dawn; champions are tallied by %PNL. May the bravest prevail! ⚔️</div>
     </div>
   )
 }
 
 function Leaderboard() {
-  // Stubbed data; replace with Helius-powered on-chain fetch in phase 2
-  const rows = Array.from({ length: 25 }).map((_, i) => ({ rank: i + 1, trader: `0x${(Math.random().toString(16).slice(2)).slice(0, 6)}`, pnl: (Math.random() * 50).toFixed(2) }))
+  // Stubbed data with proper sorting; replace with Helius-powered on-chain fetch in phase 2
+  const unsortedData = Array.from({ length: 25 }).map((_, i) => ({ 
+    trader: `0x${(Math.random().toString(16).slice(2)).slice(0, 6)}`, 
+    pnl: (Math.random() * 100 - 20).toFixed(2) // Random between -20% and 80%
+  }))
+  
+  // Sort by PNL descending (highest first)
+  const rows = unsortedData
+    .sort((a, b) => parseFloat(b.pnl) - parseFloat(a.pnl))
+    .map((item, index) => ({ ...item, rank: index + 1 }))
+    
   return (
     <div className="p-4 rounded-lg border border-sand-200/50 dark:border-gray-800 bg-white/70 dark:bg-white/5 backdrop-blur">
-      <div className="font-semibold mb-3">Top 25 — Trumpets for Today’s Titans</div>
+      <div className="font-semibold mb-3">🎺 Top 25 Gladiators — Trumpets for Today's Titans 🎺</div>
       <div className="grid grid-cols-3 text-sm font-mono">
-        <div className="font-bold">Rank</div>
-        <div className="font-bold">Trader</div>
-        <div className="font-bold">% PNL</div>
-        {rows.map(r => (
-          <React.Fragment key={r.rank}>
-            <div>{r.rank}</div>
-            <div>{r.trader}</div>
-            <div className="text-sky-600 dark:text-sky-400">{r.pnl}%</div>
-          </React.Fragment>
-        ))}
+        <div className="font-bold flex items-center gap-1">🏆 Rank</div>
+        <div className="font-bold flex items-center gap-1">⚔️ Gladiator</div>
+        <div className="font-bold flex items-center gap-1">💹 % PNL</div>
+        {rows.map(r => {
+          const pnlNum = parseFloat(r.pnl)
+          const pnlColor = pnlNum >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+          return (
+            <React.Fragment key={r.rank}>
+              <div className="flex items-center gap-1">
+                {r.rank === 1 && '🥇'}
+                {r.rank === 2 && '🥈'} 
+                {r.rank === 3 && '🥉'}
+                {r.rank > 3 && `${r.rank}.`}
+              </div>
+              <div>{r.trader}</div>
+              <div className={pnlColor}>{pnlNum >= 0 ? '+' : ''}{r.pnl}%</div>
+            </React.Fragment>
+          )
+        })}
       </div>
-      <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">Wire this to Helius RPC to honor real champions.</div>
+      <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">🏛️ Wire this to Helius RPC to honor real champions in the arena.</div>
     </div>
   )
 }
@@ -304,12 +491,17 @@ function Profile() {
 
   return (
     <div className="grid gap-3 p-4 rounded-lg border border-sand-200/50 dark:border-gray-800 bg-white/70 dark:bg-white/5 backdrop-blur">
-      <div className="text-lg font-semibold">Your Champion’s Sigil</div>
+      <div className="text-lg font-semibold">🎭 Your Gladiator's Sigil 🎭</div>
       <div className="flex items-center gap-2">
         <div className="font-mono text-sm">{publicKey ? publicKey.toBase58() : '—'}</div>
-        <button className="px-2 py-1 text-xs rounded bg-sand-400 text-gray-900 hover:bg-sand-300" onClick={onCopy}>Copy</button>
+        <button className="px-2 py-1 text-xs rounded bg-sand-400 text-gray-900 hover:bg-sand-300" onClick={onCopy}>📋 Copy</button>
       </div>
-      <div className="text-sm text-gray-700 dark:text-gray-300">SOL balance: {balance || '—'} SOL</div>
+      <div className="text-sm text-gray-700 dark:text-gray-300">💰 SOL treasury: {balance || '—'} SOL</div>
+      <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded border border-amber-200 dark:border-amber-800">
+        <p className="text-sm text-amber-700 dark:text-amber-300 italic">
+          "🏆 A true gladiator's strength is measured not by the gold in their purse, but by their courage in the arena!"
+        </p>
+      </div>
     </div>
   )
 }
