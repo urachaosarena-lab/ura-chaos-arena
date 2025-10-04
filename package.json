@@ -15,7 +15,7 @@
     "@solana/web3.js": "^1.95.3",
     "@solana/wallet-adapter-react": "^0.15.39",
     "@solana/wallet-adapter-react-ui": "^0.9.39",
-    "@solana/wallet-adapter-wallets": "^0.21.4",
+    "@solana/wallet-adapter-wallets": "^0.19.37",
     "classnames": "^2.3.2",
     "@coral-xyz/anchor": "^0.29.0"
   },
