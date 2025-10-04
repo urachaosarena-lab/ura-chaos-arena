@@ -86,11 +86,13 @@ export const App: React.FC = () => {
         const signed = await (window as any).signTransaction(tx)
         const sig = await connection.sendRawTransaction(signed.serialize())
         console.log('Join sig:', sig)
-      } else {
-        // Fallback to wallet adapter prop if available
-        const { sendTransaction } = await import('@solana/wallet-adapter-react')
-        const sig = await (sendTransaction as any)(tx, connection)
+      } else if (signTransaction) {
+        // Fallback to signTransaction prop if available
+        const signed = await signTransaction(tx)
+        const sig = await connection.sendRawTransaction(signed.serialize())
         console.log('Join sig:', sig)
+      } else {
+        throw new Error('No wallet signing method available')
       }
     } catch (e) {
       console.error(e)

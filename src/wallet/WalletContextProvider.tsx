@@ -7,7 +7,9 @@ import { WalletAdapterNetwork } from '@solana/wallet-adapter-base'
 import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
-  SolletWalletAdapter
+  CoinbaseWalletAdapter,
+  TrustWalletAdapter,
+  Coin98WalletAdapter
 } from '@solana/wallet-adapter-wallets'
 import { clusterApiUrl } from '@solana/web3.js'
 
@@ -24,8 +26,9 @@ export const WalletContextProvider: React.FC<React.PropsWithChildren> = ({ child
     () => [
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
-      // Add Sollet for better PC browser compatibility
-      new SolletWalletAdapter({ provider: 'https://www.sollet.io' })
+      new CoinbaseWalletAdapter(),
+      new TrustWalletAdapter(),
+      new Coin98WalletAdapter()
     ],
     []
   )
