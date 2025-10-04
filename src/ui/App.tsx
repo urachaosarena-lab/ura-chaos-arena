@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useWallet, useConnection } from '@solana/wallet-adapter-react'
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js'
 import classNames from 'classnames'
 import { PROGRAM_ID, buildClaimIx, buildJoinIx, deriveAllocationPda, deriveMatchPda, deriveConfigPda, getYesterdayUtcDayId, getTodayUtcDayId, fetchAllMatches, fetchStats, parseAllocation } from '../chain/arena'
@@ -44,10 +45,16 @@ export const App: React.FC = () => {
   const onConnectClick = async () => {
     try {
       setError('')
+      // Clear any previous wallet selection to force user choice
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem('walletName')
+        window.localStorage.removeItem('solana-wallet')
+      }
       await connect()
-    } catch (e) {
-      console.error(e)
-      setError('Error connecting wallet, try again...')
+    } catch (e: any) {
+      console.error('Wallet connection error:', e)
+      const errorMessage = e?.message || 'Failed to connect wallet. Please try again.'
+      setError(`Connection failed: ${errorMessage}`)
     }
   }
 
@@ -106,11 +113,7 @@ export const App: React.FC = () => {
     <div className="min-h-full flex flex-col">
       {/* Top bar */}
       <div className="flex flex-col items-center px-4 py-3 border-b border-sand-200/50 dark:border-gray-800">
-        <div className="font-extrabold text-4xl text-sky-500 text-center mb-2">⚔️ UraChaos Arena ⚔️</div>
-        <div className="text-center mb-2">
-          <div className="text-lg font-bold text-orange-600 dark:text-orange-400">Alpha phase 1 stage.</div>
-          <div className="text-xs text-gray-600 dark:text-gray-400 max-w-2xl">We are currently testing the dApp, be aware you might find multiple bugs. We would appreciate it if you would report bugs through our official X account via DM</div>
-        </div>
+        <div className="font-extrabold text-3xl text-sky-500 text-center mb-2">⚔️ UraChaos Arena ⚔️</div>
         <div className="flex items-center justify-between w-full">
           <div></div>
           <div className="flex items-center gap-3">
@@ -146,6 +149,14 @@ export const App: React.FC = () => {
         {tab === 'profile' && <Profile />}
         {tab === 'hall' && <HallOfFame />}
         {tab === 'roadmap' && <RoadmapTab />}
+      </div>
+      
+      {/* Alpha Phase Warning */}
+      <div className="px-4 py-2 text-center border-t border-sand-200/50 dark:border-gray-800">
+        <div className="text-sm font-bold text-orange-600 dark:text-orange-400 mb-1">⚠️ Alpha phase 1 stage ⚠️</div>
+        <div className="text-xs text-gray-600 dark:text-gray-400">
+          We are currently testing the dApp, be aware you might find multiple bugs. We would appreciate it if you would report bugs through our official X account via DM
+        </div>
       </div>
       
       {/* Financial Disclaimer */}
@@ -197,7 +208,7 @@ function LandingPage({ onConnect, error, theme, setTheme }: { onConnect: () => v
       
       <div className="max-w-2xl mx-auto text-center">
         {/* Main Title */}
-        <h1 className="text-6xl md:text-8xl font-extrabold text-sky-500 mb-8 animate-pulse">
+        <h1 className="text-4xl md:text-6xl font-extrabold text-sky-500 mb-8 animate-pulse">
           ⚔️ Welcome to the UraChaos Arena ⚔️
         </h1>
         
@@ -212,12 +223,11 @@ function LandingPage({ onConnect, error, theme, setTheme }: { onConnect: () => v
         </div>
         
         {/* Connect Button */}
-        <button 
-          onClick={onConnect}
-          className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white text-2xl font-bold py-4 px-8 rounded-xl shadow-2xl transform hover:scale-105 active:scale-95 transition-all duration-200 mb-4"
-        >
-          🏛️ Connect Solana Wallet 🏛️
-        </button>
+        <div className="wallet-adapter-button-trigger">
+          <WalletMultiButton className="!bg-gradient-to-r !from-sky-500 !to-blue-600 hover:!from-sky-400 hover:!to-blue-500 !text-white !text-2xl !font-bold !py-4 !px-8 !rounded-xl !shadow-2xl transform hover:!scale-105 active:!scale-95 !transition-all !duration-200 !mb-4 !border-0">
+            🏛️ Connect Solana Wallet 🏛️
+          </WalletMultiButton>
+        </div>
         
         {/* Error Message */}
         {error && (
@@ -226,12 +236,13 @@ function LandingPage({ onConnect, error, theme, setTheme }: { onConnect: () => v
           </div>
         )}
         
-        {/* Alpha Warning */}
-        <div className="mt-8 text-center">
-          <div className="text-lg font-bold text-orange-600 dark:text-orange-400 mb-2">⚠️ Alpha phase 1 stage ⚠️</div>
-          <div className="text-sm text-gray-600 dark:text-gray-400 max-w-xl mx-auto">
-            We are currently testing the dApp, be aware you might find multiple bugs. We would appreciate it if you would report bugs through our official X account via DM
-          </div>
+      </div>
+      
+      {/* Alpha Warning */}
+      <div className="absolute bottom-16 left-4 right-4 text-center">
+        <div className="text-sm font-bold text-orange-600 dark:text-orange-400 mb-1">⚠️ Alpha phase 1 stage ⚠️</div>
+        <div className="text-xs text-gray-600 dark:text-gray-400">
+          We are currently testing the dApp, be aware you might find multiple bugs. We would appreciate it if you would report bugs through our official X account via DM
         </div>
       </div>
       

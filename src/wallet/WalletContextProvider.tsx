@@ -44,7 +44,7 @@ export const WalletContextProvider: React.FC<React.PropsWithChildren> = ({ child
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider 
         wallets={wallets} 
-        autoConnect={true} 
+        autoConnect={false} 
         onError={onError}
         localStorageKey="solana-wallet"
       >
