@@ -55,7 +55,7 @@ export const App: React.FC = () => {
     if (!connected || !publicKey) {
       setError('Halt! A warrior without a wallet cannot enter the arena.')
       return
-    }\r
+    }
     try {
       setJoining(true)
       const usdPerSol = await getUsdToSolRate()
