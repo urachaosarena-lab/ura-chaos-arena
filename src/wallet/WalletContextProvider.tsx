@@ -35,9 +35,20 @@ export const WalletContextProvider: React.FC<React.PropsWithChildren> = ({ child
 
   // global error boundary for wallet adapter
   const onError = (error: any) => {
-    console.error(error)
-    setErrorMsg('Error connecting wallet, try again...')
-    setTimeout(() => setErrorMsg(null), 4000)
+    console.error('Wallet adapter error:', error)
+    let errorMessage = 'Error connecting wallet, try again...'
+    
+    // Provide more specific error messages
+    if (error?.message?.includes('User rejected')) {
+      errorMessage = 'Connection cancelled by user'
+    } else if (error?.message?.includes('not found')) {
+      errorMessage = 'Wallet not found. Please install a supported wallet.'
+    } else if (error?.message?.includes('timeout')) {
+      errorMessage = 'Connection timeout. Please try again.'
+    }
+    
+    setErrorMsg(errorMessage)
+    setTimeout(() => setErrorMsg(null), 6000)
   }
 
   return (
@@ -46,7 +57,7 @@ export const WalletContextProvider: React.FC<React.PropsWithChildren> = ({ child
         wallets={wallets} 
         autoConnect={false} 
         onError={onError}
-        localStorageKey="solana-wallet"
+        localStorageKey="wallet-name"
       >
         {/* Expose error via context-like prop drilling for simplicity */}
         <div data-wallet-error={errorMsg || ''}>

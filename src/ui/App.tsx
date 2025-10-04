@@ -208,13 +208,13 @@ function LandingPage({ onConnect, error, theme, setTheme }: { onConnect: () => v
       
       <div className="max-w-2xl mx-auto text-center">
         {/* Main Title */}
-        <h1 className="text-4xl md:text-6xl font-extrabold text-sky-500 mb-8 animate-pulse">
+        <h1 className="text-3xl md:text-6xl font-extrabold text-sky-500 mb-6 md:mb-8 animate-pulse">
           ⚔️ Welcome to the UraChaos Arena ⚔️
         </h1>
         
         {/* Gladiator Lore */}
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg p-6 mb-8 border-2 border-amber-300 dark:border-amber-600">
-          <p className="text-lg text-gray-800 dark:text-gray-200 italic leading-relaxed">
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg p-4 md:p-6 mb-6 md:mb-8 border-2 border-amber-300 dark:border-amber-600">
+          <p className="text-sm md:text-lg text-gray-800 dark:text-gray-200 italic leading-relaxed">
             🏛️ Hail, brave soul! Step into the grand colosseum where only the mightiest traders survive. 
             The sands are stained with the tears of the fallen, but for those who dare to enter, 
             marvelous prizes await! ⚡ Fight hard, trade smart, and prove your worth in this arena of chaos. 
@@ -223,8 +223,8 @@ function LandingPage({ onConnect, error, theme, setTheme }: { onConnect: () => v
         </div>
         
         {/* Connect Button */}
-        <div className="wallet-adapter-button-trigger">
-          <WalletMultiButton className="!bg-gradient-to-r !from-sky-500 !to-blue-600 hover:!from-sky-400 hover:!to-blue-500 !text-white !text-2xl !font-bold !py-4 !px-8 !rounded-xl !shadow-2xl transform hover:!scale-105 active:!scale-95 !transition-all !duration-200 !mb-4 !border-0">
+        <div className="w-full max-w-md mx-auto">
+          <WalletMultiButton className="!w-full !bg-gradient-to-r !from-sky-500 !to-blue-600 hover:!from-sky-400 hover:!to-blue-500 !text-white !text-lg md:!text-2xl !font-bold !py-3 md:!py-4 !px-6 md:!px-8 !rounded-xl !shadow-2xl transform hover:!scale-105 active:!scale-95 !transition-all !duration-200 !mb-4 !border-0 !justify-center">
             🏛️ Connect Solana Wallet 🏛️
           </WalletMultiButton>
         </div>
@@ -239,8 +239,8 @@ function LandingPage({ onConnect, error, theme, setTheme }: { onConnect: () => v
       </div>
       
       {/* Alpha Warning */}
-      <div className="absolute bottom-16 left-4 right-4 text-center">
-        <div className="text-sm font-bold text-orange-600 dark:text-orange-400 mb-1">⚠️ Alpha phase 1 stage ⚠️</div>
+      <div className="absolute bottom-20 md:bottom-16 left-4 right-4 text-center">
+        <div className="text-xs md:text-sm font-bold text-orange-600 dark:text-orange-400 mb-1">⚠️ Alpha phase 1 stage ⚠️</div>
         <div className="text-xs text-gray-600 dark:text-gray-400">
           We are currently testing the dApp, be aware you might find multiple bugs. We would appreciate it if you would report bugs through our official X account via DM
         </div>
