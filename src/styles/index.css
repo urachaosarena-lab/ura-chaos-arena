@@ -1,0 +1,37 @@
+/* Global styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-arena-lightBg text-gray-900 dark:bg-arena-darkBg dark:text-gray-100;
+  background-image: linear-gradient(to bottom, transparent, rgba(197, 179, 140, 0.35));
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: 100% 100%;
+}
+
+button:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.fade-enter {
+  @apply opacity-0;
+}
+.fade-enter-active {
+  @apply opacity-100 transition-opacity duration-300;
+}
+.fade-exit {
+  @apply opacity-100;
+}
+.fade-exit-active {
+  @apply opacity-0 transition-opacity duration-300;
+}

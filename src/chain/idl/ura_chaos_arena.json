@@ -1,0 +1,33 @@
+{
+  "version": "0.1.0",
+  "name": "ura_chaos_arena",
+  "instructions": [
+    {
+      "name": "join",
+      "accounts": [
+        { "name": "player", "isMut": true, "isSigner": true },
+        { "name": "config", "isMut": true, "isSigner": false },
+        { "name": "matchState", "isMut": true, "isSigner": false },
+        { "name": "matchVault", "isMut": true, "isSigner": false },
+        { "name": "entry", "isMut": true, "isSigner": false },
+        { "name": "pythPriceAccount", "isMut": false, "isSigner": false },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "amount", "type": "u64" }
+      ]
+    },
+    {
+      "name": "claim",
+      "accounts": [
+        { "name": "winner", "isMut": true, "isSigner": true },
+        { "name": "matchState", "isMut": true, "isSigner": false },
+        { "name": "matchVault", "isMut": true, "isSigner": false },
+        { "name": "allocation", "isMut": true, "isSigner": false },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": []
+    }
+  ],
+  "metadata": { "address": "UraChAoSArena111111111111111111111111111111" }
+}
