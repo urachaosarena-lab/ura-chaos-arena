@@ -194,6 +194,65 @@ export async function fetchStats(connection: Connection): Promise<StatsLite | nu
   return { totalMatches, totalPlayers, totalPrizeDistributedLamports, totalUraEarmarkedLamports, totalUracEarmarkedLamports, totalUraBurnedAtoms, totalUracBurnedAtoms, totalUraBurnSolLamports, totalUracBurnSolLamports }
 }
 
+// Fetch current match participants for leaderboard
+export async function fetchCurrentMatchParticipants(connection: Connection): Promise<Array<{address: string, joinedAt: number, paid: number}>> {
+  try {
+    const dayId = getTodayUtcDayId()
+    const matchPda = deriveMatchPda(dayId)
+    
+    // Get all player entries for this match
+    const accounts = await connection.getProgramAccounts(PROGRAM_ID, {
+      filters: [
+        { dataSize: 8 + 88 }, // PlayerEntry size
+        {
+          memcmp: {
+            offset: 8, // Skip discriminator
+            bytes: matchPda.toBase58(),
+          }
+        }
+      ]
+    })
+    
+    return accounts.map(account => {
+      const data = account.account.data
+      const view = new DataView(data.buffer, data.byteOffset, data.byteLength)
+      let o = 8 // skip discriminator
+      o += 32 // skip match_key
+      
+      const playerBytes = new Uint8Array(data.buffer, data.byteOffset + o, 32)
+      const player = new PublicKey(playerBytes)
+      o += 32
+      
+      const paid = view.getBigUint64(o, true)
+      o += 8
+      const joinedAt = view.getBigInt64(o, true)
+      
+      return {
+        address: player.toBase58(),
+        joinedAt: Number(joinedAt),
+        paid: Number(paid)
+      }
+    }).sort((a, b) => a.joinedAt - b.joinedAt) // Sort by join time
+  } catch (error) {
+    console.error('Error fetching participants:', error)
+    return []
+  }
+}
+
+// Get current match state
+export async function fetchCurrentMatch(connection: Connection): Promise<MatchStateLite | null> {
+  try {
+    const dayId = getTodayUtcDayId()
+    const matchPda = deriveMatchPda(dayId)
+    const info = await connection.getAccountInfo(matchPda)
+    if (!info) return null
+    return parseMatchState(info.data)
+  } catch (error) {
+    console.error('Error fetching current match:', error)
+    return null
+  }
+}
+
 function getBigUint128(view: DataView, offset: number): bigint {
   const lo = view.getBigUint64(offset, true)
   const hi = view.getBigUint64(offset + 8, true)
