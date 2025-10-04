@@ -36,10 +36,16 @@ export const App: React.FC = () => {
   const [tab, setTab] = useState<'chaos' | 'highstakes' | 'profile' | 'hall' | 'roadmap'>('chaos')
   const [error, setError] = useState<string>('')
   const [joining, setJoining] = useState(false)
+  const [walletConnected, setWalletConnected] = useState(false)
   const { theme, setTheme } = useTheme()
 
   const vaultAddressStr = import.meta.env.VITE_VAULT_ADDRESS as string | undefined
   const vaultPubkey = vaultAddressStr ? new PublicKey(vaultAddressStr) : undefined
+
+  // Monitor wallet connection state
+  useEffect(() => {
+    setWalletConnected(connected || (typeof window !== 'undefined' && (window as any).solana?.isConnected))
+  }, [connected])
 
   const onConnectClick = async () => {
     try {
@@ -50,10 +56,12 @@ export const App: React.FC = () => {
         console.log('Phantom detected, connecting directly...')
         const response = await (window as any).solana.connect()
         console.log('Phantom connected:', response.publicKey.toString())
+        setWalletConnected(true)
       } else {
         // Fallback to wallet adapter
         console.log('Using wallet adapter...')
         await connect()
+        setWalletConnected(true)
       }
     } catch (e: any) {
       console.error('Wallet connection error:', e)
@@ -62,12 +70,18 @@ export const App: React.FC = () => {
   }
 
   // If wallet is not connected, show landing page
-  if (!connected) {
+  if (!connected && !walletConnected) {
     return <LandingPage onConnect={onConnectClick} error={error} theme={theme} setTheme={setTheme} />
   }
 
   const onJoinArena = async () => {
-    if (!connected || !publicKey) {
+    // Get the actual wallet public key
+    let walletPubkey = publicKey
+    if (!walletPubkey && typeof window !== 'undefined' && (window as any).solana?.publicKey) {
+      walletPubkey = (window as any).solana.publicKey
+    }
+    
+    if ((!connected && !walletConnected) || !walletPubkey) {
       setError('Halt! A warrior without a wallet cannot enter the arena.')
       return
     }
@@ -81,7 +95,7 @@ export const App: React.FC = () => {
       if (!pythPkStr) throw new Error('Missing VITE_PYTH_SOL_USD_PRICE_ACCOUNT')
       const pythPk = new PublicKey(pythPkStr)
       const dayId = getTodayUtcDayId()
-      const ix = await buildJoinIx(connection, publicKey, lamports, pythPk, dayId)
+      const ix = await buildJoinIx(connection, walletPubkey, lamports, pythPk, dayId)
       const tx = new Transaction().add(ix)
       tx.feePayer = publicKey
       tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash
@@ -120,11 +134,22 @@ export const App: React.FC = () => {
         <div className="flex items-center justify-between w-full">
           <div></div>
           <div className="flex items-center gap-3">
-            {connected && (
-              <div className="text-sm text-gray-700 dark:text-gray-300">{shortAddress(publicKey?.toBase58())}</div>
+            {(connected || walletConnected) && (
+              <div className="text-sm text-gray-700 dark:text-gray-300">
+                {shortAddress(
+                  publicKey?.toBase58() || 
+                  (typeof window !== 'undefined' && (window as any).solana?.publicKey?.toString())
+                )}
+              </div>
             )}
             <Settings theme={theme} setTheme={setTheme} />
-            <button className="px-3 py-2 rounded-md bg-sand-400 text-gray-900 hover:bg-sand-300 active:scale-95 transition" onClick={() => disconnect()}>Retreat</button>
+            <button className="px-3 py-2 rounded-md bg-sand-400 text-gray-900 hover:bg-sand-300 active:scale-95 transition" onClick={() => {
+              disconnect()
+              setWalletConnected(false)
+              if (typeof window !== 'undefined' && (window as any).solana?.disconnect) {
+                (window as any).solana.disconnect()
+              }
+            }}>Retreat</button>
           </div>
         </div>
       </div>
@@ -146,7 +171,7 @@ export const App: React.FC = () => {
       {/* Content */}
       <div className="flex-1 px-4 py-4">
         {tab === 'chaos' && (
-          <ChaosTab connected={connected} onJoinArena={onJoinArena} joining={joining} />
+          <ChaosTab connected={connected || walletConnected} onJoinArena={onJoinArena} joining={joining} />
         )}
         {tab === 'highstakes' && <HighStakesTab />}
         {tab === 'profile' && <Profile />}
