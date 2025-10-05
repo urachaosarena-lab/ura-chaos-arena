@@ -765,11 +765,17 @@ function Profile() {
       }
       
       try {
-        console.log('⏳ Loading balance...')
-        const lamports = await connection.getBalance(walletPubkey)
-        const balanceStr = (lamports / LAMPORTS_PER_SOL).toFixed(4)
-        console.log('💵 Balance loaded:', balanceStr)
-        setBalance(balanceStr)
+        // Load balance (non-blocking - if it fails, continue anyway)
+        try {
+          console.log('⏳ Loading balance...')
+          const lamports = await connection.getBalance(walletPubkey)
+          const balanceStr = (lamports / LAMPORTS_PER_SOL).toFixed(4)
+          console.log('💵 Balance loaded:', balanceStr)
+          setBalance(balanceStr)
+        } catch (balanceError) {
+          console.warn('⚠️ Balance loading failed (RPC issue), continuing anyway:', balanceError.message)
+          setBalance('—')
+        }
         
         console.log('📊 Generating player stats...')
         const stats = getMockPlayerStats(walletPubkey.toBase58())
@@ -783,8 +789,18 @@ function Profile() {
         setPlayerStats(stats)
         console.log('🎉 Profile loading completed successfully!')
       } catch (error) {
-        console.error('💥 Profile loading error:', error)
-        setPlayerStats(null)
+        console.error('💥 Critical profile loading error:', error)
+        // Even if there's an error, try to set basic stats
+        try {
+          const stats = getMockPlayerStats(walletPubkey.toBase58())
+          const levelInfo = calculateLevel(stats.currentXP)
+          stats.level = levelInfo.level
+          setPlayerStats(stats)
+          console.log('🆘 Fallback stats loaded despite error')
+        } catch (fallbackError) {
+          console.error('💀 Complete failure - could not load any stats:', fallbackError)
+          setPlayerStats(null)
+        }
       } finally {
         console.log('🏁 Setting loading to false')
         setLoading(false)
@@ -826,7 +842,6 @@ function Profile() {
       <div className="p-8 rounded-lg border border-sand-200/50 dark:border-gray-700 bg-white/70 dark:bg-gray-800/80 backdrop-blur text-center">
         <h2 className="text-2xl font-bold text-gray-600 dark:text-gray-300 mb-4">⚙️ Loading Profile ⚙️</h2>
         <p className="text-gray-500 dark:text-gray-400">Gathering your gladiator statistics from the arena...</p>
-        <div className="text-xs text-gray-400 mt-2">Debug: loading={loading.toString()}, stats={playerStats ? 'exists' : 'null'}</div>
       </div>
     )
   }
