@@ -146,7 +146,7 @@ export const App: React.FC = () => {
   return (
     <div className="min-h-full flex flex-col">
       {/* Top bar */}
-      <div className="flex flex-col items-center px-4 py-3 border-b border-sand-200/50 dark:border-gray-800">
+      <div className="flex flex-col items-center px-4 py-3 border-b border-sand-200/50 dark:border-gray-700">
         <div className="font-extrabold text-3xl text-sky-500 text-center mb-2">⚔️ UraChaos Arena ⚔️</div>
         <div className="flex items-center justify-between w-full">
           <div></div>
@@ -167,7 +167,7 @@ export const App: React.FC = () => {
             )}
             <button 
               onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-              className="p-2 rounded-md hover:bg-sand-100 dark:hover:bg-gray-800 transition text-xl" 
+              className="p-2 rounded-md hover:bg-sand-100 dark:hover:bg-gray-700 transition text-xl"
               aria-label="Toggle theme"
             >
               {theme === 'light' ? '🌙' : '☀️'}
@@ -189,7 +189,7 @@ export const App: React.FC = () => {
       )}
 
       {/* Tabs */}
-      <div className="px-4 py-2 flex gap-2 border-b border-sand-200/50 dark:border-gray-800 flex-wrap">
+      <div className="px-4 py-2 flex gap-2 border-b border-sand-200/50 dark:border-gray-700 flex-wrap">
         <TabButton current={tab} setTab={setTab} id="chaos" label="⚔️ Chaos" />
         <TabButton current={tab} setTab={setTab} id="highstakes" label="👑 High Stakes" />
         <TabButton current={tab} setTab={setTab} id="profile" label="👤 Profile" />
@@ -209,7 +209,7 @@ export const App: React.FC = () => {
       </div>
       
       {/* Alpha Phase Warning */}
-      <div className="px-4 py-2 text-center border-t border-sand-200/50 dark:border-gray-800">
+      <div className="px-4 py-2 text-center border-t border-sand-200/50 dark:border-gray-700">
         <div className="text-sm font-bold text-orange-600 dark:text-orange-400 mb-1">⚠️ Alpha phase 1 stage ⚠️</div>
         <div className="text-xs text-gray-600 dark:text-gray-400">
           We are currently testing the dApp, be aware you might find multiple bugs. We would appreciate it if you would report bugs through our official X account via DM
@@ -217,7 +217,7 @@ export const App: React.FC = () => {
       </div>
       
       {/* Financial Disclaimer */}
-      <div className="px-4 py-2 text-center text-xs text-gray-500 dark:text-gray-400 border-t border-sand-200/50 dark:border-gray-800">
+      <div className="px-4 py-2 text-center text-xs text-gray-500 dark:text-gray-400 border-t border-sand-200/50 dark:border-gray-700">
         This platform is for entertainment purposes only. Trading cryptocurrencies involves substantial risk and may not be suitable for all investors. 
         Past performance does not guarantee future results. You could lose all or part of your investment. 
         Please consider your risk tolerance and consult with a financial advisor. This is not financial advice.
@@ -231,7 +231,7 @@ function TabButton({ current, setTab, id, label }: { current: string, setTab: (t
   return (
     <button onClick={() => setTab(id)} className={classNames(
       'px-3 py-2 rounded-md transition',
-      active ? 'bg-sky-400 text-white shadow-sm' : 'hover:bg-sand-100 dark:hover:bg-gray-800'
+      active ? 'bg-sky-400 text-white shadow-sm' : 'hover:bg-sand-100 dark:hover:bg-gray-700'
     )}>{label}</button>
   )
 }
@@ -329,7 +329,7 @@ function LandingPage({ onConnect, error, theme, setTheme }: { onConnect: () => v
         </h1>
         
         {/* Gladiator Lore */}
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg p-4 md:p-6 mb-6 md:mb-8 border-2 border-amber-300 dark:border-amber-600">
+        <div className="bg-white/80 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg p-4 md:p-6 mb-6 md:mb-8 border-2 border-amber-300 dark:border-amber-500">
           <p className="text-sm md:text-lg text-gray-800 dark:text-gray-200 italic leading-relaxed">
             🏛️ Hail, brave soul! Step into the grand colosseum where only the mightiest traders survive. 
             The sands are stained with the tears of the fallen, but for those who dare to enter, 
@@ -582,7 +582,7 @@ function CurrentMatchPanel() {
     return () => clearInterval(id)
   }, [])
   return (
-    <div className="p-4 rounded-lg border border-sand-200/50 dark:border-gray-800 bg-white/70 dark:bg-white/5 backdrop-blur">
+    <div className="p-4 rounded-lg border border-sand-200/50 dark:border-gray-700 bg-white/70 dark:bg-gray-800/80 backdrop-blur">
       <div className="text-lg font-semibold mb-1">🏛️ Current Match — the sands reset in {t}</div>
       <div className="text-sm text-gray-600 dark:text-gray-400">🔔 The gong will sound at UTC dawn; champions are tallied by %PNL. May the bravest prevail! ⚔️</div>
     </div>
@@ -665,7 +665,7 @@ function Leaderboard() {
   }, [participants])
     
   return (
-    <div className="p-4 rounded-lg border border-sand-200/50 dark:border-gray-800 bg-white/70 dark:bg-white/5 backdrop-blur">
+    <div className="p-4 rounded-lg border border-sand-200/50 dark:border-gray-700 bg-white/70 dark:bg-gray-800/80 backdrop-blur">
       <div className="font-semibold mb-3 flex items-center justify-between">
         <span>🎺 Gladiators in the Arena — Live Battle 🎺</span>
         {matchInfo && (
@@ -684,8 +684,8 @@ function Leaderboard() {
           <div className="grid grid-cols-4 text-sm font-mono gap-x-2">
             <div className="font-bold flex items-center gap-1">🏆 Rank</div>
             <div className="font-bold flex items-center gap-1">⚔️ Gladiator</div>
-            <div className="font-bold flex items-center gap-1">💹 Performance</div>
             <div className="font-bold flex items-center gap-1">🏅 Achievements</div>
+            <div className="font-bold flex items-center gap-1">💹 Performance</div>
             {displayData.map(r => {
               const pnlNum = parseFloat(r.pnl)
               const pnlColor = pnlNum >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
@@ -703,13 +703,13 @@ function Leaderboard() {
                       <div className="text-xs text-blue-600 dark:text-blue-400">🧪lvl: {r.level}</div>
                     )}
                   </div>
-                  <div className={r.isPlaceholder ? 'text-gray-500' : pnlColor}>
-                    {r.isPlaceholder ? '-' : `${pnlNum >= 0 ? '+' : ''}${r.pnl}%`}
-                  </div>
                   <div className="text-lg">
                     {!r.isPlaceholder && r.achievements && (
                       <AchievementDisplay achievements={r.achievementsList || []} />
                     )}
+                  </div>
+                  <div className={r.isPlaceholder ? 'text-gray-500' : pnlColor}>
+                    {r.isPlaceholder ? '-' : `${pnlNum >= 0 ? '+' : ''}${r.pnl}%`}
                   </div>
                 </React.Fragment>
               )
@@ -734,7 +734,11 @@ function Profile() {
 
   useEffect(() => {
     (async () => {
-      if (!publicKey) return setBalance('')
+      if (!publicKey) {
+        setBalance('')
+        setPlayerStats(null)
+        return
+      }
       const lamports = await connection.getBalance(publicKey)
       setBalance((lamports / LAMPORTS_PER_SOL).toFixed(4))
       
@@ -751,7 +755,23 @@ function Profile() {
     await navigator.clipboard.writeText(publicKey.toBase58())
   }
 
-  if (!playerStats) return null
+  if (!publicKey) {
+    return (
+      <div className="p-8 rounded-lg border border-sand-200/50 dark:border-gray-700 bg-white/70 dark:bg-gray-800/80 backdrop-blur text-center">
+        <h2 className="text-2xl font-bold text-gray-600 dark:text-gray-300 mb-4">🏛️ Connect Your Wallet 🏛️</h2>
+        <p className="text-gray-500 dark:text-gray-400">Connect your Solana wallet to view your gladiator profile and battle statistics.</p>
+      </div>
+    )
+  }
+
+  if (!playerStats) {
+    return (
+      <div className="p-8 rounded-lg border border-sand-200/50 dark:border-gray-700 bg-white/70 dark:bg-gray-800/80 backdrop-blur text-center">
+        <h2 className="text-2xl font-bold text-gray-600 dark:text-gray-300 mb-4">⚙️ Loading Profile ⚙️</h2>
+        <p className="text-gray-500 dark:text-gray-400">Gathering your gladiator statistics from the arena...</p>
+      </div>
+    )
+  }
   
   const levelInfo = calculateLevel(playerStats.currentXP)
   const achievements = calculateAchievements(playerStats)
@@ -760,7 +780,7 @@ function Profile() {
   return (
     <div className="grid gap-4">
       {/* Player Info */}
-      <div className="p-4 rounded-lg border border-sand-200/50 dark:border-gray-800 bg-white/70 dark:bg-white/5 backdrop-blur">
+      <div className="p-4 rounded-lg border border-sand-200/50 dark:border-gray-700 bg-white/70 dark:bg-gray-800/80 backdrop-blur">
         <div className="text-lg font-semibold mb-3">🎭 Your Gladiator's Profile 🎭</div>
         
         <div className="flex items-center gap-2 mb-3">
@@ -797,7 +817,7 @@ function Profile() {
       </div>
       
       {/* Achievements */}
-      <div className="p-4 rounded-lg border border-sand-200/50 dark:border-gray-800 bg-white/70 dark:bg-white/5 backdrop-blur">
+      <div className="p-4 rounded-lg border border-sand-200/50 dark:border-gray-700 bg-white/70 dark:bg-gray-800/80 backdrop-blur">
         <div className="text-lg font-semibold mb-3">🏅 Battle Achievements 🏅</div>
         
         {achievements.length > 0 ? (
@@ -847,7 +867,7 @@ function Profile() {
         </div>
       </div>
       
-      <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded border border-amber-200 dark:border-amber-800">
+      <div className="p-3 bg-amber-50 dark:bg-amber-900/30 rounded border border-amber-200 dark:border-amber-600">
         <p className="text-sm text-amber-700 dark:text-amber-300 italic text-center">
           "🏆 A true gladiator's strength is measured not by gold, but by courage in the arena!"
         </p>
@@ -887,7 +907,7 @@ function HallOfFame() {
   }, [connection])
 
   return (
-    <div className="p-4 rounded-lg border border-sand-200/50 dark:border-gray-800 bg-white/70 dark:bg-white/5 backdrop-blur">
+    <div className="p-4 rounded-lg border border-sand-200/50 dark:border-gray-700 bg-white/70 dark:bg-gray-800/80 backdrop-blur">
       <div className="text-lg font-semibold mb-3">Hall of Fame</div>
       {loading ? (
         <div className="text-sm text-gray-600 dark:text-gray-400">Loading stats…</div>
