@@ -727,10 +727,11 @@ function Leaderboard() {
 }
 
 function Profile() {
-  const { publicKey } = useWallet()
+  const { publicKey, connected } = useWallet()
   const { connection } = useConnection()
   const [balance, setBalance] = useState<string>('')
   const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null)
+  const [loading, setLoading] = useState(true)
 
   // Get the actual connected wallet public key (same logic as main app)
   const getWalletPublicKey = () => {
@@ -742,23 +743,37 @@ function Profile() {
   }
 
   useEffect(() => {
-    (async () => {
+    const loadProfile = async () => {
+      setLoading(true)
       const walletPubkey = getWalletPublicKey()
+      
       if (!walletPubkey) {
         setBalance('')
         setPlayerStats(null)
+        setLoading(false)
         return
       }
-      const lamports = await connection.getBalance(walletPubkey)
-      setBalance((lamports / LAMPORTS_PER_SOL).toFixed(4))
       
-      // Load player stats
-      const stats = getMockPlayerStats(walletPubkey.toBase58())
-      const levelInfo = calculateLevel(stats.currentXP)
-      stats.level = levelInfo.level
-      setPlayerStats(stats)
-    })()
-  }, [publicKey, connection])
+      try {
+        // Load balance
+        const lamports = await connection.getBalance(walletPubkey)
+        setBalance((lamports / LAMPORTS_PER_SOL).toFixed(4))
+        
+        // Load player stats
+        const stats = getMockPlayerStats(walletPubkey.toBase58())
+        const levelInfo = calculateLevel(stats.currentXP)
+        stats.level = levelInfo.level
+        setPlayerStats(stats)
+      } catch (error) {
+        console.error('Profile loading error:', error)
+        setPlayerStats(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadProfile()
+  }, [publicKey, connected, connection])
 
   const onCopy = async () => {
     const walletPubkey = getWalletPublicKey()
@@ -778,7 +793,7 @@ function Profile() {
     )
   }
 
-  if (!playerStats) {
+  if (loading || !playerStats) {
     return (
       <div className="p-8 rounded-lg border border-sand-200/50 dark:border-gray-700 bg-white/70 dark:bg-gray-800/80 backdrop-blur text-center">
         <h2 className="text-2xl font-bold text-gray-600 dark:text-gray-300 mb-4">⚙️ Loading Profile ⚙️</h2>
