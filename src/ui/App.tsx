@@ -10,7 +10,7 @@ function shortAddress(addr?: string) {
 }
 
 function useTheme() {
-  const [theme, setTheme] = useState<string>(() => localStorage.getItem('theme') || 'light')
+  const [theme, setTheme] = useState<string>(() => localStorage.getItem('theme') || 'dark')
   useEffect(() => {
     const root = document.documentElement
     if (theme === 'dark') root.classList.add('dark')
@@ -732,18 +732,28 @@ function Profile() {
   const [balance, setBalance] = useState<string>('')
   const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null)
 
+  // Get the actual connected wallet public key (same logic as main app)
+  const getWalletPublicKey = () => {
+    if (publicKey) return publicKey
+    if (typeof window !== 'undefined' && (window as any).solana?.publicKey) {
+      return (window as any).solana.publicKey
+    }
+    return null
+  }
+
   useEffect(() => {
     (async () => {
-      if (!publicKey) {
+      const walletPubkey = getWalletPublicKey()
+      if (!walletPubkey) {
         setBalance('')
         setPlayerStats(null)
         return
       }
-      const lamports = await connection.getBalance(publicKey)
+      const lamports = await connection.getBalance(walletPubkey)
       setBalance((lamports / LAMPORTS_PER_SOL).toFixed(4))
       
       // Load player stats
-      const stats = getMockPlayerStats(publicKey.toBase58())
+      const stats = getMockPlayerStats(walletPubkey.toBase58())
       const levelInfo = calculateLevel(stats.currentXP)
       stats.level = levelInfo.level
       setPlayerStats(stats)
@@ -751,15 +761,19 @@ function Profile() {
   }, [publicKey, connection])
 
   const onCopy = async () => {
-    if (!publicKey) return
-    await navigator.clipboard.writeText(publicKey.toBase58())
+    const walletPubkey = getWalletPublicKey()
+    if (!walletPubkey) return
+    await navigator.clipboard.writeText(walletPubkey.toBase58())
   }
 
-  if (!publicKey) {
+  const walletPubkey = getWalletPublicKey()
+  
+  // If we're in Profile tab but somehow no wallet detected, something is wrong
+  if (!walletPubkey) {
     return (
-      <div className="p-8 rounded-lg border border-sand-200/50 dark:border-gray-700 bg-white/70 dark:bg-gray-800/80 backdrop-blur text-center">
-        <h2 className="text-2xl font-bold text-gray-600 dark:text-gray-300 mb-4">🏛️ Connect Your Wallet 🏛️</h2>
-        <p className="text-gray-500 dark:text-gray-400">Connect your Solana wallet to view your gladiator profile and battle statistics.</p>
+      <div className="p-8 rounded-lg border border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20 backdrop-blur text-center">
+        <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">⚠️ Wallet Error ⚠️</h2>
+        <p className="text-red-500 dark:text-red-300">Wallet connection lost. Please refresh the page and reconnect your wallet.</p>
       </div>
     )
   }
@@ -784,7 +798,7 @@ function Profile() {
         <div className="text-lg font-semibold mb-3">🎭 Your Gladiator's Profile 🎭</div>
         
         <div className="flex items-center gap-2 mb-3">
-          <div className="font-mono text-sm">{publicKey ? publicKey.toBase58() : '—'}</div>
+          <div className="font-mono text-sm">{walletPubkey ? walletPubkey.toBase58() : '—'}</div>
           <button className="px-2 py-1 text-xs rounded bg-sand-400 text-gray-900 hover:bg-sand-300" onClick={onCopy}>📋 Copy</button>
         </div>
         
