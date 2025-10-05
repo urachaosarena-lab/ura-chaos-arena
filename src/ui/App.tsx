@@ -3,6 +3,7 @@ import { useWallet, useConnection } from '@solana/wallet-adapter-react'
 import { LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js'
 import classNames from 'classnames'
 import { PROGRAM_ID, buildClaimIx, buildJoinIx, deriveAllocationPda, deriveMatchPda, deriveConfigPda, getYesterdayUtcDayId, getTodayUtcDayId, fetchAllMatches, fetchStats, parseAllocation, fetchCurrentMatchParticipants, fetchCurrentMatch } from '../chain/arena'
+import { PlayerStats, Achievement, calculateLevel, calculateAchievements, formatAchievementsDisplay, getMockPlayerStats } from '../utils/playerProgress'
 
 function shortAddress(addr?: string) {
   return addr ? addr.slice(0, 6) : ''
@@ -37,15 +38,31 @@ export const App: React.FC = () => {
   const [error, setError] = useState<string>('')
   const [joining, setJoining] = useState(false)
   const [walletConnected, setWalletConnected] = useState(false)
+  const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null)
   const { theme, setTheme } = useTheme()
 
   const vaultAddressStr = import.meta.env.VITE_VAULT_ADDRESS as string | undefined
   const vaultPubkey = vaultAddressStr ? new PublicKey(vaultAddressStr) : undefined
 
-  // Monitor wallet connection state
+  // Monitor wallet connection state and load player stats
   useEffect(() => {
-    setWalletConnected(connected || (typeof window !== 'undefined' && (window as any).solana?.isConnected))
-  }, [connected])
+    const isConnected = connected || (typeof window !== 'undefined' && (window as any).solana?.isConnected)
+    setWalletConnected(isConnected)
+    
+    // Load player stats when wallet is connected
+    if (isConnected && (publicKey || (window as any).solana?.publicKey)) {
+      const address = publicKey?.toBase58() || (window as any).solana?.publicKey?.toString()
+      if (address) {
+        // TODO: Replace with real backend call
+        const stats = getMockPlayerStats(address)
+        const levelInfo = calculateLevel(stats.currentXP)
+        stats.level = levelInfo.level
+        setPlayerStats(stats)
+      }
+    } else {
+      setPlayerStats(null)
+    }
+  }, [connected, publicKey])
 
   const onConnectClick = async () => {
     try {
@@ -134,15 +151,27 @@ export const App: React.FC = () => {
         <div className="flex items-center justify-between w-full">
           <div></div>
           <div className="flex items-center gap-3">
-            {(connected || walletConnected) && (
-              <div className="text-sm text-gray-700 dark:text-gray-300">
-                {shortAddress(
-                  publicKey?.toBase58() || 
-                  (typeof window !== 'undefined' && (window as any).solana?.publicKey?.toString())
-                )}
+            {(connected || walletConnected) && playerStats && (
+              <div className="flex flex-col items-end text-sm">
+                <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                  <span>{shortAddress(
+                    publicKey?.toBase58() || 
+                    (typeof window !== 'undefined' && (window as any).solana?.publicKey?.toString())
+                  )}</span>
+                  <span className="text-blue-600 dark:text-blue-400">🧪lvl: {playerStats.level}</span>
+                </div>
+                <div className="text-lg leading-none">
+                  <AchievementDisplay achievements={calculateAchievements(playerStats)} />
+                </div>
               </div>
             )}
-            <Settings theme={theme} setTheme={setTheme} />
+            <button 
+              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+              className="p-2 rounded-md hover:bg-sand-100 dark:hover:bg-gray-800 transition text-xl" 
+              aria-label="Toggle theme"
+            >
+              {theme === 'light' ? '🌙' : '☀️'}
+            </button>
             <button className="px-3 py-2 rounded-md bg-sand-400 text-gray-900 hover:bg-sand-300 active:scale-95 transition" onClick={() => {
               disconnect()
               setWalletConnected(false)
@@ -162,7 +191,7 @@ export const App: React.FC = () => {
       {/* Tabs */}
       <div className="px-4 py-2 flex gap-2 border-b border-sand-200/50 dark:border-gray-800 flex-wrap">
         <TabButton current={tab} setTab={setTab} id="chaos" label="⚔️ Chaos" />
-        <TabButton current={tab} setTab={setTab} id="highstakes" label="🎰 High Stakes" />
+        <TabButton current={tab} setTab={setTab} id="highstakes" label="👑 High Stakes" />
         <TabButton current={tab} setTab={setTab} id="profile" label="👤 Profile" />
         <TabButton current={tab} setTab={setTab} id="hall" label="🏆 Hall of Fame" />
         <TabButton current={tab} setTab={setTab} id="roadmap" label="🚀 Roadmap" />
@@ -207,19 +236,58 @@ function TabButton({ current, setTab, id, label }: { current: string, setTab: (t
   )
 }
 
-function Settings({ theme, setTheme }: { theme: string, setTheme: (t: string) => void }) {
-  const [open, setOpen] = useState(false)
+function AchievementDisplay({ achievements }: { achievements: Achievement[] }) {
+  const [hoveredAchievement, setHoveredAchievement] = useState<Achievement | null>(null)
+  const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 })
+  
+  const handleMouseEnter = (achievement: Achievement, event: React.MouseEvent) => {
+    setHoveredAchievement(achievement)
+    const rect = event.currentTarget.getBoundingClientRect()
+    setHoverPosition({ 
+      x: rect.left + rect.width / 2, 
+      y: rect.top - 10 
+    })
+  }
+  
+  const displayString = formatAchievementsDisplay(achievements)
+  
+  if (!displayString) return null
+  
   return (
     <div className="relative">
-      <button onClick={() => setOpen(v => !v)} className="p-2 rounded-md hover:bg-sand-100 dark:hover:bg-gray-800 transition" aria-label="Settings">⚙️</button>
-      {open && (
-        <div className="absolute right-0 mt-2 w-56 rounded-md border border-sand-200/50 dark:border-gray-700 bg-white dark:bg-arena-darkBg shadow-lg p-3">
-          <div className="flex items-center justify-between">
-            <div className="text-sm">Theme</div>
-            <button className="px-2 py-1 rounded bg-sand-400 text-gray-900 hover:bg-sand-300 transition" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-              {theme === 'light' ? 'Switch to Dark' : 'Switch to Light'}
-            </button>
-          </div>
+      {displayString.split('').map((emoji, index) => {
+        const achievement = achievements.find(a => a.emoji === emoji)
+        if (!achievement) return emoji
+        
+        return (
+          <span
+            key={`${achievement.id}-${index}`}
+            className="cursor-pointer hover:scale-110 transition-transform inline-block"
+            onMouseEnter={(e) => handleMouseEnter(achievement, e)}
+            onMouseLeave={() => setHoveredAchievement(null)}
+            onTouchStart={(e) => handleMouseEnter(achievement, e)}
+            onTouchEnd={() => setTimeout(() => setHoveredAchievement(null), 2000)}
+          >
+            {emoji}
+          </span>
+        )
+      })}
+      
+      {/* Tooltip */}
+      {hoveredAchievement && (
+        <div 
+          className="fixed z-50 bg-black text-white text-xs rounded py-2 px-3 pointer-events-none transform -translate-x-1/2 -translate-y-full"
+          style={{ left: hoverPosition.x, top: hoverPosition.y }}
+        >
+          <div className="font-bold">{hoveredAchievement.name}</div>
+          <div className="text-gray-300">{hoveredAchievement.description}</div>
+          <div className="text-yellow-400 italic">"{hoveredAchievement.lore}"</div>
+          {hoveredAchievement.count && (
+            <div className="text-green-400">Achieved {hoveredAchievement.count} times</div>
+          )}
+          {hoveredAchievement.isActive && hoveredAchievement.activeCount && (
+            <div className="text-blue-400">Current streak: {hoveredAchievement.activeCount}</div>
+          )}
         </div>
       )}
     </div>
@@ -417,7 +485,7 @@ function HighStakesTab() {
     <div className="grid gap-4">
       {/* Rules and Prize Distribution */}
       <div className="p-4 rounded-lg border border-purple-300 dark:border-purple-600 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
-        <h3 className="text-xl font-bold text-purple-800 dark:text-purple-200 mb-3">🎰 High Stakes Arena Rules 🎰</h3>
+        <h3 className="text-xl font-bold text-purple-800 dark:text-purple-200 mb-3">👑 High Stakes Arena Rules 👑</h3>
         <div className="text-sm text-purple-700 dark:text-purple-300 space-y-2">
           <p><strong>💎 Entry Fee:</strong> $50 worth of SOL per elite gladiator</p>
           <p><strong>⏰ Duration:</strong> 24-hour elite battles, synchronized with Chaos Arena</p>
@@ -556,11 +624,13 @@ function Leaderboard() {
         rank: i + 1,
         trader: 'No gladiators yet',
         pnl: '0.00',
+        level: 1,
+        achievements: '',
         isPlaceholder: true
       }))
     }
     
-    // For now, show participants in join order with simulated PNL
+    // For now, show participants in join order with simulated PNL and levels
     // TODO: Replace with actual trading performance data
     return participants.slice(0, 25).map((p, index) => {
       const shortAddr = p.address.slice(0, 6) + '...' + p.address.slice(-4)
@@ -568,10 +638,18 @@ function Leaderboard() {
       const timeFactor = (Date.now() / 1000 - p.joinedAt) / 3600 // hours since joined
       const simulatedPnl = (Math.sin(timeFactor + p.joinedAt) * 20 + Math.random() * 10 - 5).toFixed(2)
       
+      // Get player stats for level and achievements
+      const stats = getMockPlayerStats(p.address)
+      const levelInfo = calculateLevel(stats.currentXP)
+      const achievements = calculateAchievements(stats)
+      
       return {
         rank: index + 1,
         trader: shortAddr,
         pnl: simulatedPnl,
+        level: levelInfo.level,
+        achievements: formatAchievementsDisplay(achievements),
+        achievementsList: achievements,
         address: p.address,
         paid: p.paid,
         joinedAt: p.joinedAt
@@ -597,10 +675,11 @@ function Leaderboard() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-3 text-sm font-mono">
+          <div className="grid grid-cols-4 text-sm font-mono gap-x-2">
             <div className="font-bold flex items-center gap-1">🏆 Rank</div>
             <div className="font-bold flex items-center gap-1">⚔️ Gladiator</div>
             <div className="font-bold flex items-center gap-1">💹 Performance</div>
+            <div className="font-bold flex items-center gap-1">🏅 Achievements</div>
             {displayData.map(r => {
               const pnlNum = parseFloat(r.pnl)
               const pnlColor = pnlNum >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
@@ -612,9 +691,19 @@ function Leaderboard() {
                     {r.rank === 3 && '🥉'}
                     {r.rank > 3 && `${r.rank}.`}
                   </div>
-                  <div className={r.isPlaceholder ? 'text-gray-500 italic' : ''}>{r.trader}</div>
+                  <div className={r.isPlaceholder ? 'text-gray-500 italic' : 'flex flex-col'}>
+                    <div>{r.trader}</div>
+                    {!r.isPlaceholder && (
+                      <div className="text-xs text-blue-600 dark:text-blue-400">🧪lvl: {r.level}</div>
+                    )}
+                  </div>
                   <div className={r.isPlaceholder ? 'text-gray-500' : pnlColor}>
                     {r.isPlaceholder ? '-' : `${pnlNum >= 0 ? '+' : ''}${r.pnl}%`}
+                  </div>
+                  <div className="text-lg">
+                    {!r.isPlaceholder && r.achievements && (
+                      <AchievementDisplay achievements={r.achievementsList || []} />
+                    )}
                   </div>
                 </React.Fragment>
               )
@@ -635,12 +724,19 @@ function Profile() {
   const { publicKey } = useWallet()
   const { connection } = useConnection()
   const [balance, setBalance] = useState<string>('')
+  const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null)
 
   useEffect(() => {
     (async () => {
       if (!publicKey) return setBalance('')
       const lamports = await connection.getBalance(publicKey)
       setBalance((lamports / LAMPORTS_PER_SOL).toFixed(4))
+      
+      // Load player stats
+      const stats = getMockPlayerStats(publicKey.toBase58())
+      const levelInfo = calculateLevel(stats.currentXP)
+      stats.level = levelInfo.level
+      setPlayerStats(stats)
     })()
   }, [publicKey, connection])
 
@@ -649,17 +745,105 @@ function Profile() {
     await navigator.clipboard.writeText(publicKey.toBase58())
   }
 
+  if (!playerStats) return null
+  
+  const levelInfo = calculateLevel(playerStats.currentXP)
+  const achievements = calculateAchievements(playerStats)
+  const progressPercentage = (levelInfo.currentLevelXP / levelInfo.nextLevelXP) * 100
+
   return (
-    <div className="grid gap-3 p-4 rounded-lg border border-sand-200/50 dark:border-gray-800 bg-white/70 dark:bg-white/5 backdrop-blur">
-      <div className="text-lg font-semibold">🎭 Your Gladiator's Sigil 🎭</div>
-      <div className="flex items-center gap-2">
-        <div className="font-mono text-sm">{publicKey ? publicKey.toBase58() : '—'}</div>
-        <button className="px-2 py-1 text-xs rounded bg-sand-400 text-gray-900 hover:bg-sand-300" onClick={onCopy}>📋 Copy</button>
+    <div className="grid gap-4">
+      {/* Player Info */}
+      <div className="p-4 rounded-lg border border-sand-200/50 dark:border-gray-800 bg-white/70 dark:bg-white/5 backdrop-blur">
+        <div className="text-lg font-semibold mb-3">🎭 Your Gladiator's Profile 🎭</div>
+        
+        <div className="flex items-center gap-2 mb-3">
+          <div className="font-mono text-sm">{publicKey ? publicKey.toBase58() : '—'}</div>
+          <button className="px-2 py-1 text-xs rounded bg-sand-400 text-gray-900 hover:bg-sand-300" onClick={onCopy}>📋 Copy</button>
+        </div>
+        
+        <div className="text-sm text-gray-700 dark:text-gray-300 mb-3">💰 SOL treasury: {balance || '—'} SOL</div>
+        
+        {/* Level and XP */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-lg font-bold text-blue-600 dark:text-blue-400">🧪 Level {playerStats.level}</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">{levelInfo.currentLevelXP} / {levelInfo.nextLevelXP} XP</span>
+          </div>
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-300"
+              style={{ width: `${progressPercentage}%` }}
+            ></div>
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {levelInfo.nextLevelXP - levelInfo.currentLevelXP} XP to next level
+          </div>
+        </div>
+        
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>Total Matches: <span className="font-bold">{playerStats.totalMatches}</span></div>
+          <div>Total Prizes: <span className="font-bold">{playerStats.totalPrizes}</span></div>
+          <div>Top 1 Wins: <span className="font-bold text-yellow-600">{playerStats.top1Wins}</span></div>
+          <div>Win Streak: <span className="font-bold text-green-600">{playerStats.currentWinStreak}</span></div>
+        </div>
       </div>
-      <div className="text-sm text-gray-700 dark:text-gray-300">💰 SOL treasury: {balance || '—'} SOL</div>
-      <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded border border-amber-200 dark:border-amber-800">
-        <p className="text-sm text-amber-700 dark:text-amber-300 italic">
-          "🏆 A true gladiator's strength is measured not by the gold in their purse, but by their courage in the arena!"
+      
+      {/* Achievements */}
+      <div className="p-4 rounded-lg border border-sand-200/50 dark:border-gray-800 bg-white/70 dark:bg-white/5 backdrop-blur">
+        <div className="text-lg font-semibold mb-3">🏅 Battle Achievements 🏅</div>
+        
+        {achievements.length > 0 ? (
+          <div className="mb-4">
+            <div className="text-2xl mb-3">
+              <AchievementDisplay achievements={achievements} />
+            </div>
+            <div className="grid gap-2">
+              {achievements.map(achievement => (
+                <div key={achievement.id} className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-800/50 rounded">
+                  <span className="text-xl">{achievement.emoji}</span>
+                  <div className="flex-1">
+                    <div className="font-semibold">{achievement.name}</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">{achievement.description}</div>
+                    <div className="text-xs text-yellow-600 dark:text-yellow-400 italic">"{achievement.lore}"</div>
+                  </div>
+                  {achievement.count && (
+                    <div className="text-sm font-bold text-green-600">{achievement.count}x</div>
+                  )}
+                  {achievement.isActive && achievement.activeCount && (
+                    <div className="text-sm font-bold text-blue-600">Streak: {achievement.activeCount}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="text-gray-500 dark:text-gray-400 italic text-center py-4">
+            No achievements yet. Enter the arena to start your legend!
+          </div>
+        )}
+        
+        {/* Achievement Legend */}
+        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="text-sm font-semibold mb-2">Achievement Guide:</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-1 text-xs text-gray-600 dark:text-gray-400">
+            <div>🏆 Chaos Champion - Win 1st in Chaos</div>
+            <div>👑 High Stakes Emperor - Win 1st in High Stakes</div>
+            <div>💩 Fallen Gladiator - Finish last</div>
+            <div>⚡ Arena Addict - 3+ matches in a row</div>
+            <div>🌩 Storm Bringer - Achieve 10+ ⚡ streak</div>
+            <div>🔮 Soothsayer - 2+ top1 wins in a row</div>
+            <div>🔥 Winning Streak - 2+ prizes in a row</div>
+            <div>🌋 Volcano - Achieve 10+ 🔥 streak</div>
+            <div>🏅 Arena Veteran - Play 20+ matches</div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded border border-amber-200 dark:border-amber-800">
+        <p className="text-sm text-amber-700 dark:text-amber-300 italic text-center">
+          "🏆 A true gladiator's strength is measured not by gold, but by courage in the arena!"
         </p>
       </div>
     </div>
