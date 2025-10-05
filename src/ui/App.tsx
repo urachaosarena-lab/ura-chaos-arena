@@ -743,11 +743,21 @@ function Profile() {
   }
 
   useEffect(() => {
+    console.log('🔍 Profile useEffect triggered', {
+      publicKey: publicKey?.toBase58(),
+      connected,
+      hasConnection: !!connection
+    })
+    
     const loadProfile = async () => {
+      console.log('🚀 loadProfile started')
       setLoading(true)
+      
       const walletPubkey = getWalletPublicKey()
+      console.log('💰 Wallet pubkey:', walletPubkey?.toBase58())
       
       if (!walletPubkey) {
+        console.log('❌ No wallet detected, clearing state')
         setBalance('')
         setPlayerStats(null)
         setLoading(false)
@@ -755,19 +765,28 @@ function Profile() {
       }
       
       try {
-        // Load balance
+        console.log('⏳ Loading balance...')
         const lamports = await connection.getBalance(walletPubkey)
-        setBalance((lamports / LAMPORTS_PER_SOL).toFixed(4))
+        const balanceStr = (lamports / LAMPORTS_PER_SOL).toFixed(4)
+        console.log('💵 Balance loaded:', balanceStr)
+        setBalance(balanceStr)
         
-        // Load player stats
+        console.log('📊 Generating player stats...')
         const stats = getMockPlayerStats(walletPubkey.toBase58())
+        console.log('📈 Raw stats:', stats)
+        
         const levelInfo = calculateLevel(stats.currentXP)
+        console.log('🧪 Level info:', levelInfo)
         stats.level = levelInfo.level
+        
+        console.log('✅ Setting player stats:', stats)
         setPlayerStats(stats)
+        console.log('🎉 Profile loading completed successfully!')
       } catch (error) {
-        console.error('Profile loading error:', error)
+        console.error('💥 Profile loading error:', error)
         setPlayerStats(null)
       } finally {
+        console.log('🏁 Setting loading to false')
         setLoading(false)
       }
     }
@@ -783,8 +802,16 @@ function Profile() {
 
   const walletPubkey = getWalletPublicKey()
   
+  console.log('🎭 Profile render state:', {
+    walletPubkey: walletPubkey?.toBase58(),
+    loading,
+    hasPlayerStats: !!playerStats,
+    balance
+  })
+  
   // If we're in Profile tab but somehow no wallet detected, something is wrong
   if (!walletPubkey) {
+    console.log('⚠️ Rendering wallet error state')
     return (
       <div className="p-8 rounded-lg border border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20 backdrop-blur text-center">
         <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">⚠️ Wallet Error ⚠️</h2>
@@ -794,13 +821,17 @@ function Profile() {
   }
 
   if (loading || !playerStats) {
+    console.log('⏳ Rendering loading state - loading:', loading, 'playerStats:', !!playerStats)
     return (
       <div className="p-8 rounded-lg border border-sand-200/50 dark:border-gray-700 bg-white/70 dark:bg-gray-800/80 backdrop-blur text-center">
         <h2 className="text-2xl font-bold text-gray-600 dark:text-gray-300 mb-4">⚙️ Loading Profile ⚙️</h2>
         <p className="text-gray-500 dark:text-gray-400">Gathering your gladiator statistics from the arena...</p>
+        <div className="text-xs text-gray-400 mt-2">Debug: loading={loading.toString()}, stats={playerStats ? 'exists' : 'null'}</div>
       </div>
     )
   }
+  
+  console.log('🎉 Rendering full profile with stats:', playerStats)
   
   const levelInfo = calculateLevel(playerStats.currentXP)
   const achievements = calculateAchievements(playerStats)
