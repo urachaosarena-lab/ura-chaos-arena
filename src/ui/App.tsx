@@ -311,9 +311,15 @@ function LandingPage({ onConnect, error, theme, setTheme }: { onConnect: () => v
   }, [])
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100 dark:from-gray-900 dark:to-gray-800 px-4">
-      {/* Settings in top right */}
+      {/* Theme toggle in top right */}
       <div className="absolute top-4 right-4">
-        <Settings theme={theme} setTheme={setTheme} />
+        <button 
+          onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+          className="p-3 rounded-full bg-white/80 dark:bg-gray-800/80 hover:bg-white dark:hover:bg-gray-800 transition text-2xl shadow-lg" 
+          aria-label="Toggle theme"
+        >
+          {theme === 'light' ? '🌙' : '☀️'}
+        </button>
       </div>
       
       <div className="max-w-2xl mx-auto text-center">
